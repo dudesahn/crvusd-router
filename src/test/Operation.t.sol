@@ -53,12 +53,71 @@ contract OperationTest is Setup {
         );
     }
 
+    function test_operation_fixed() public {
+        uint256 _amount = 1_000_000e18;
+
+        // Deposit into strategy
+        mintAndDepositIntoStrategy(strategy, user, _amount);
+
+        assertEq(strategy.totalAssets(), _amount, "!totalAssets");
+
+        // Earn Interest
+        skip(strategy.profitMaxUnlockTime());
+
+        // Report profit
+        vm.prank(keeper);
+        (uint256 profit, uint256 loss) = strategy.report();
+        console2.log(
+            "Profit from basic report:",
+            profit / 1e18,
+            "* 1e18 crvUSD"
+        );
+
+        // Check return Values
+        assertGe(profit, 0, "!profit");
+        assertEq(loss, 0, "!loss");
+
+        // simulate profits in our target vault as well this time
+        // since these vault shares are minted 1:1000 we can do the same amount for 0.1% profit
+        createProfitInTargetVault(strategy.yearnCurveLendVault(), _amount);
+        skip(strategy.profitMaxUnlockTime());
+
+        // Report profit
+        vm.prank(keeper);
+        (uint256 profitTwo, uint256 lossTwo) = strategy.report();
+        console2.log(
+            "Profit from fancy report:",
+            profitTwo / 1e18,
+            "* 1e18 crvUSD"
+        );
+
+        // Check return Values
+        assertGe(profitTwo, 0, "!profit");
+        assertEq(lossTwo, 0, "!loss");
+        assertGt(profitTwo, profit, "!profitComp");
+
+        uint256 balanceBefore = asset.balanceOf(user);
+
+        // Withdraw all funds
+        vm.prank(user);
+        strategy.redeem(_amount, user, user);
+
+        assertGe(
+            asset.balanceOf(user),
+            balanceBefore + _amount,
+            "!final balance"
+        );
+    }
+
     function test_profitableReport(
         uint256 _amount,
         uint16 _profitFactor
     ) public {
         vm.assume(_amount > minFuzzAmount && _amount < maxFuzzAmount);
-        _profitFactor = uint16(bound(uint256(_profitFactor), 10, MAX_BPS));
+
+        // since our lender is default profitable, doing max 10_000 will revert w/ health check
+        //  (more than 100% total profit). so do 9950 to give some buffer for the interest earned.
+        _profitFactor = uint16(bound(uint256(_profitFactor), 10, 9_950));
 
         // Deposit into strategy
         mintAndDepositIntoStrategy(strategy, user, _amount);
@@ -68,9 +127,15 @@ contract OperationTest is Setup {
         // Earn Interest
         skip(1 days);
 
+        // confirm that our strategy is empty
+        assertEq(asset.balanceOf(address(strategy)), 0, "!empty");
+
         // TODO: implement logic to simulate earning interest.
         uint256 toAirdrop = (_amount * _profitFactor) / MAX_BPS;
         airdrop(asset, address(strategy), toAirdrop);
+
+        // confirm that we have our airdrop amount in our strategy loose
+        assertEq(asset.balanceOf(address(strategy)), toAirdrop, "!airdrop");
 
         // Report profit
         vm.prank(keeper);
@@ -100,7 +165,10 @@ contract OperationTest is Setup {
         uint16 _profitFactor
     ) public {
         vm.assume(_amount > minFuzzAmount && _amount < maxFuzzAmount);
-        _profitFactor = uint16(bound(uint256(_profitFactor), 10, MAX_BPS));
+
+        // since our lender is default profitable, doing max 10_000 will revert w/ health check
+        //  (more than 100% total profit). so do 9950 to give some buffer for the interest earned.
+        _profitFactor = uint16(bound(uint256(_profitFactor), 10, 9_950));
 
         // Set protocol fee to 0 and perf fee to 10%
         setFees(0, 1_000);
