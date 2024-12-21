@@ -12,7 +12,6 @@ import {LlamaLendConvexFactory} from "../../LlamaLendConvexFactory.sol";
 import {LlamaLendOracle} from "../../periphery/StrategyAprOracle.sol";
 import {LlamaLendConvexOracle} from "../../periphery/StrategyAprOracleConvex.sol";
 
-// interfaces
 import {IStrategyInterface} from "../../interfaces/IStrategyInterface.sol";
 import {IV2StrategyInterface} from "../../interfaces/IV2StrategyInterface.sol";
 import {ICurveStrategyProxy} from "../../interfaces/ICrvusdInterfaces.sol";
@@ -263,7 +262,7 @@ contract Setup is ExtendedTest, IEvents {
             );
             assertEq(_strategy.management(), address(curveFactory));
         }
-
+        
         vm.prank(management);
         _strategy.acceptManagement();
 
