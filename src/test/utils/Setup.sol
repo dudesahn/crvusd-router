@@ -9,6 +9,8 @@ import {StrategyLlamaLendCurve, ERC20} from "../../StrategyLlamaLendCurve.sol";
 import {StrategyLlamaLendConvex} from "../../StrategyLlamaLendConvex.sol";
 import {LlamaLendCurveFactory} from "../../LlamaLendCurveFactory.sol";
 import {LlamaLendConvexFactory} from "../../LlamaLendConvexFactory.sol";
+import {LlamaLendOracle} from "../../periphery/StrategyAprOracle.sol";
+import {LlamaLendConvexOracle} from "../../periphery/StrategyAprOracleConvex.sol";
 
 // interfaces
 import {IStrategyInterface} from "../../interfaces/IStrategyInterface.sol";
@@ -91,6 +93,9 @@ contract Setup is ExtendedTest, IEvents {
     // state var to use in case we have very low or zero yield; some of our assumptions break
     bool public noYield;
 
+    LlamaLendOracle public oracle;
+    LlamaLendConvexOracle public convexOracle;
+
     function setUp() public virtual {
         _setTokenAddrs();
 
@@ -101,7 +106,7 @@ contract Setup is ExtendedTest, IEvents {
         decimals = asset.decimals();
 
         // set market/gauge variables
-        uint256 useMarket = 0;
+        uint256 useMarket = 4;
         useConvex = true;
 
         // deploy our strategy factories
@@ -216,6 +221,10 @@ contract Setup is ExtendedTest, IEvents {
                 strategy.setClaimFlags(false, false);
             }
         }
+
+        // deploy our oracles
+        oracle = new LlamaLendOracle();
+        convexOracle = new LlamaLendConvexOracle();
 
         // label all the used addresses for traces
         vm.label(user, "user");
