@@ -17,6 +17,8 @@ interface ICurveStrategyProxy {
     ) external returns (uint256);
 
     function approveStrategy(address _gauge, address _strategy) external;
+
+    function approveFactory(address _factory, bool _approved) external;
 }
 
 interface IGauge {
