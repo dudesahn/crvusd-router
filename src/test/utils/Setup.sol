@@ -101,7 +101,7 @@ contract Setup is ExtendedTest, IEvents {
         decimals = asset.decimals();
 
         // set market/gauge variables
-        uint256 useMarket = 3;
+        uint256 useMarket = 0;
         useConvex = true;
 
         // deploy our strategy factories
@@ -241,6 +241,7 @@ contract Setup is ExtendedTest, IEvents {
                     pid
                 )
             );
+            assertEq(_strategy.management(), address(convexFactory));
         } else {
             // we save the strategy as a IStrategyInterface to give it the needed interface
             vm.prank(management);
@@ -251,6 +252,7 @@ contract Setup is ExtendedTest, IEvents {
                     curveLendGauge
                 )
             );
+            assertEq(_strategy.management(), address(curveFactory));
         }
 
         vm.prank(management);
